@@ -1,0 +1,434 @@
+# Maintainer:  Tim Stahlhut <stahta01@gmail.com>
+# Contributor: Alexey Pavlov <alexpux@gmail.com>
+
+# toolchain build order: win32-api-headers->msys2-runtime->binutils->gcc->binutils->msys2-runtime
+# NOTE: libtool requires rebuilt with each new gcc version
+
+pkgname=('gcc' 'gcc-libs' 'gcc-fortran')
+pkgver=4.8.2
+pkgrel=5
+pkgdesc="The GNU Compiler Collection"
+arch=('i686' 'x86_64')
+groups=('msys2-devel')
+license=('GPL' 'LGPL' 'FDL' 'custom')
+url="http://gcc.gnu.org"
+makedepends=('binutils>=2.23'
+             'mpc-devel'
+             'gmp-devel'
+             'mpfr-devel'
+             'zlib-devel'
+             'doxygen')
+checkdepends=('dejagnu')
+options=('!emptydirs') # 'debug' '!strip')
+_sourcedir=gcc-${pkgver}
+ISL_VERSION=0.12.1
+CLOOG_VERSION=0.18.1
+noextract=("isl-${ISL_VERSION}.tar.bz2"
+           "cloog-${CLOOG_VERSION}.tar.gz")
+source=(https://ftp.gnu.org/gnu/gcc/gcc-${pkgver}/gcc-${pkgver}.tar.bz2
+        https://libisl.sourceforge.io/isl-${ISL_VERSION}.tar.bz2
+        http://www.bastoul.net/cloog/pages/download/cloog-${CLOOG_VERSION}.tar.gz
+        isl-0.12.1-msys2.patch
+        isl-0.12.1-no-undefined.patch
+        cloog-0.18.0-msys2.patch
+        cloog-0.18.1-no-undefined.patch
+        gcc-4.8-filename-output.patch
+        gcc-4.8-lambda-ICE.patch
+        4.5-java-FIONREAD.patch
+        4.5-skiptest.patch
+        gcc-4.6.4-Fix-texi-docs-syntax-errors.patch
+        4.7-ada.patch
+        4.7-boehm-gc-cygwin.patch
+        4.7-execstack.patch
+        4.7-java-awt.patch
+        4.7-java-jni.patch
+        4.7-libffi-noinst.patch
+        4.7-libitm-cygwin.patch
+        4.7-libstdc-cygwin.patch
+        4.8-gcc-ada-DTR.patch
+        4.8-cmodel-medium.patch
+        4.8-duplicate-symbols.patch
+        4.8-java-soname.patch
+        4.8-libatomic-cygwin.patch
+        4.8-libdecnumber-cygwin64.patch
+        4.8-libffi-cygwin64.patch
+        4.8-libgcc-cygwin64.patch
+        4.8-lto-plugin-soname.patch
+        4.8-picflag-cygwin64.patch
+        4.8-specs-cygwin.patch
+        4.8-Wimplicit-decls.patch
+        gcc-4.8.2-1.src.patch
+        gcc-4.8.0-configure-msys2.patch
+        gcc-4.8.0-libgcc-msys32.patch
+        gcc-4.8.0-libgcc-msys64.patch
+        gcc-4.8.0-msys2-spec.patch
+        gcc-4.8.0-testsuite-msys2.patch
+        4.8-libgcc-references.patch)
+sha256sums=('09dc2276c73424bbbfda1dbddc62bbbf900c9f185acf7f3e1d773ce2d7e3cdc8'
+            '43ba8a43c3554a72a7e9e0d913a52dedbc0d712f472f3e62d239517bdd53e7b7'
+            '02500a4edd14875f94fe84cbeda4290425cb0c1c2474c6f75d75a303d64b4196'
+            '5b3613a62ac2134c8abdd919e510c310f3bacfec66e1a829c67c76e26b6309d9'
+            'ac4a076ad18d77c3d0333a04fdc1a0b3c7a8d23c20519361dccdd8d75170afe8'
+            '94dccc528f3a91307b4134b9c62d7bdfd65396e45f9c2fedae0bfd59749e4d2d'
+            '1f8aa38ee7bdfc3ec97c397775e2318ca501f0349b82b92a441e4e7578f4831e'
+            '9278e745190bac0b3f6ef74972aecd4e2891d4930f7b6fa8840c3d4f7fbf4f98'
+            '301cfbe339043ca14205140acbec1d0f55178f01365ff309e4ddb90a3c934031'
+            '852dd4a19107a9b3c701b4c8c72cd7fea1a6c1f382819644aab714d1098781d1'
+            '4b2c627fd0ffe2adacf13d99931cad9fbc5769f0871ac2f03483bc41656c374c'
+            '2cafd273a667f1130e9cd20c87cd5c83cda1100de9958b9dbbf656dcf29fd2bb'
+            '02ae67338fcd7af84b6238ff185da0eeb3f6ae0e11f60e953fff4fd6eb77db78'
+            'de6a337cdea4d50eadf524bf84a5704287c94978898402ea6b8d9568d4aa24cf'
+            '4942e94ccdf11ce260e029400bd1cee8b63e78d071ac2bae812ba261edb7b67b'
+            '3f77bb0dc38bedead30026619f42cedd3ee7dd4e82251f001b8f34c8d8ec0c65'
+            '45d970b118876a68b31a3e366f1b4ba31893ead99fae9e32e5e0700768edcc86'
+            'af90eb0eb49e06b4735f428fee514c6b87f349c1d3669c8bc7bb6250d4126c4e'
+            '1015575631397b588050e53aba5795cc8357e55a2754f8bc6214b564f38f5a06'
+            '1be5f8d96073061628ffe761e953c9578355545d32ac7829165492ba5287d734'
+            '5611314f1320dd840e7c118521e497edcb9372fc1f12427f50f3cab903bc64f6'
+            '0a338f60e88577349e8c53524229d4ea73cc5f6b048f007ccaebd0a190499c91'
+            '7702ce84510e9d2d8d18149057bb3fe572b32c8fd97d580c8991a7a351aa3580'
+            '5053cdfc883b199ced7696c5b7db441ab1474d2cf813add15945683dcb1c9881'
+            '6812f82299b33c5e354e8a54fcc96149957e9ffa35d576537923621d97c6817c'
+            '889f14abf4d6f60e335b9d0f81b67bb97605193f0a584cd8b52eebf88425c55a'
+            '7f3410ccc61f4b60ae9fc4201cc321f681771196e44fc61639bdf924a9132eec'
+            '56cef9a4566902558181106c2de75e44d3e3b43de79788f653814c4f0cc6dc7f'
+            '6e4322814f7b0f1d3ea3dbea0c8fa233d6ec9493354d7bd54e755ee971914d74'
+            'c47cbc859d96844fa029e09abf060593a43acb908df586e1230daa70369cecae'
+            'cb32b02f7ab2f5357b38e6af6d2aac9a53953d042c454c9be7a64abb1bb2f8ba'
+            '5ee5601ec9e10aac1ef677bad67d849fdbffdf2ccbb632a33f7b2b7e8a8e41d4'
+            '8148796b1f13b358a5ef331935e9f5c0af8399d56a112e974df73bd6cb6a4fcf'
+            'c5ea3111100734259abea5d13e7484a6bf05c7ee7d1f889474cc04198be83997'
+            '8e7b8b1454bd115ad69af888cb31b650babcb0908590e9b6d06769426065eec6'
+            '4659c6b5c7ddc3f91ce0dd9d4f81bc2c9a5c26429a22d8bd3875f29c131b3b78'
+            '2106c9679c19a133ffffe64b9c950094695cf0d4e2609a90702f0d9e8bb9cfbc'
+            'd447256b07e1c49b66a3a36c7acdb621145cddda797b1526075a8fd48a12c200'
+            '52ddd5b2d5f337efa7475de211eccebd70e343c902107343b22d66951fb799d3')
+
+# =========================================== #
+_extract_to_gcc_folder() {
+    local tarfile="$1"
+    local subfolder="$(echo "$tarfile" | sed 's/-.*$//')"
+    if [ ! -d  "$_sourcedir/$subfolder" ]; then
+        echo "Extracting ${tarfile} to $_sourcedir/$subfolder"
+        mkdir -p "$_sourcedir/$subfolder"
+        tar -x --strip-components=1 -f "$tarfile" -C "$_sourcedir/$subfolder"
+    else
+        echo "Folder $_sourcedir/$subfolder already exists"
+    fi
+}
+# =========================================== #
+prepare() {
+  cd ${srcdir}
+
+  _extract_to_gcc_folder          isl-${ISL_VERSION}.tar.bz2
+  _extract_to_gcc_folder          cloog-${CLOOG_VERSION}.tar.gz
+
+  cd ${srcdir}/gcc-${pkgver}/isl
+  patch -Nbp1 -i ${srcdir}/isl-0.12.1-msys2.patch
+  patch -Nbp1 -i ${srcdir}/isl-0.12.1-no-undefined.patch
+
+  cd ${srcdir}/gcc-${pkgver}/cloog
+  patch -Nbp1 -i ${srcdir}/cloog-0.18.0-msys2.patch
+  patch -Nbp1 -i ${srcdir}/cloog-0.18.1-no-undefined.patch
+
+  autoreconf -fi
+
+  cd ${srcdir}/gcc-${pkgver}
+
+  [ -f gcc/ada/a-intnam-cygwin.ads ] && rm -f gcc/ada/a-intnam-cygwin.ads
+  [ -f gcc/ada/indepsw-cygwin.adb ] && rm -f gcc/ada/indepsw-cygwin.adb
+  [ -f gcc/ada//mlib-tgt-specific-cygwin.adb ] && rm -f gcc/ada/mlib-tgt-specific-cygwin.adb
+  [ -f gcc/ada/s-gloloc-cygwin.adb ] && rm -f gcc/ada/s-gloloc-cygwin.adb
+  [ -f gcc/ada/s-osinte-cygwin.ads ] && rm -f gcc/ada/s-osinte-cygwin.ads
+  [ -f gcc/ada/s-taprop-cygwin.adb ] && rm -f gcc/ada/s-taprop-cygwin.adb
+  [ -f gcc/ada/system-cygwin.ads ] && rm -f gcc/ada/system-cygwin.ads
+  [ -f gcc/config/i386/cygwin.opt ] && rm -f gcc/config/i386/cygwin.opt
+  [ -f gcc/config/i386/msys-w64.h ] && rm -f gcc/config/i386/msys-w64.h
+  [ -f gcc/config/i386/t-msys-w64 ] && rm -f gcc/config/i386/t-msys-w64
+  [ -f gcc/config/i386/msys.h ] && rm -f gcc/config/i386/msys.h
+  [ -f gcc/testsuite/g++.dg/cpp0x/lambda/lambda-names1.C ] && rm -f gcc/testsuite/g++.dg/cpp0x/lambda/lambda-names1.C
+  [ -f libgcc/config/i386/t-msys ] && rm -f libgcc/config/i386/t-msys
+
+  # Do not run fixincludes
+  #sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+
+  echo ${pkgver} > gcc/BASE-VER
+
+  # hack! - some configure tests for header files using "$CPP $CPPFLAGS"
+  sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" {libiberty,gcc}/configure
+
+  # http://gcc.gnu.org/bugzilla/show_bug.cgi?id=57653
+  patch -p0 -i ${srcdir}/gcc-4.8-filename-output.patch
+
+  # http://gcc.gnu.org/bugzilla//show_bug.cgi?id=56710 - commit 3d1f8279
+  patch -p1 -i ${srcdir}/gcc-4.8-lambda-ICE.patch
+
+  #MSYS/Cygwin patches
+  patch -p2 -i ${srcdir}/4.7-ada.patch
+  patch -p2 -i ${srcdir}/4.7-boehm-gc-cygwin.patch
+  patch -p2 -i ${srcdir}/4.7-execstack.patch
+  patch -p2 -i ${srcdir}/4.7-java-awt.patch
+  patch -p2 -i ${srcdir}/4.5-java-FIONREAD.patch
+  patch -p2 -i ${srcdir}/4.7-java-jni.patch
+  patch -p0 -i ${srcdir}/4.8-java-soname.patch
+  patch -p2 -i ${srcdir}/4.8-libatomic-cygwin.patch
+  patch -p2 -i ${srcdir}/4.8-libdecnumber-cygwin64.patch
+  patch -p2 -i ${srcdir}/4.7-libffi-noinst.patch
+  patch -p2 -i ${srcdir}/4.8-libffi-cygwin64.patch
+  if [ "$CARCH" = "x86_64" ]
+  then
+    patch -p0 -i ${srcdir}/4.8-libgcc-cygwin64.patch
+    patch -p1 -i ${srcdir}/gcc-4.8.0-libgcc-msys64.patch
+  else
+    patch -p1 -i ${srcdir}/gcc-4.8.0-libgcc-msys32.patch
+  fi
+  patch -p2 -i ${srcdir}/4.7-libitm-cygwin.patch
+  patch -p2 -i ${srcdir}/4.7-libstdc-cygwin.patch
+  patch -p2 -i ${srcdir}/4.8-lto-plugin-soname.patch
+  patch -p2 -i ${srcdir}/4.8-picflag-cygwin64.patch
+  patch -p0 -i ${srcdir}/4.8-specs-cygwin.patch
+  if [ "$CARCH" = "x86_64" ]
+  then
+    patch -p0 -i ${srcdir}/4.8-cmodel-medium.patch
+    patch -p2 -i ${srcdir}/4.8-duplicate-symbols.patch	
+  fi
+  patch -p0 -i ${srcdir}/4.8-libgcc-references.patch
+  patch -p2 -i ${srcdir}/4.5-skiptest.patch
+  if [ "$CARCH" = "i686" ]
+  then
+    patch -p0 -i ${srcdir}/4.8-gcc-ada-DTR.patch
+  fi
+  patch -p2 -i ${srcdir}/4.8-Wimplicit-decls.patch
+  patch -p1 -i ${srcdir}/gcc-4.8.0-configure-msys2.patch
+  patch -p1 -i ${srcdir}/gcc-4.8.0-msys2-spec.patch
+  patch -p1 -i ${srcdir}/gcc-4.8.0-testsuite-msys2.patch
+  patch -p1 -i ${srcdir}/gcc-4.6.4-Fix-texi-docs-syntax-errors.patch
+
+  [ -d ${srcdir}/gcc-build ] && rm -rf ${srcdir}/gcc-build
+  mkdir ${srcdir}/gcc-build
+}
+
+build() {
+  cd ${srcdir}/gcc-build
+
+  case ${CARCH} in
+    i686)
+      _arch=i686
+	  _arch_conf="--disable-sjlj-exceptions"
+    ;;
+	x86_64)
+      _arch=x86-64
+	  _arch_conf=
+    ;;
+  esac
+  # using -pipe causes spurious test-suite failures
+  # http://gcc.gnu.org/bugzilla/show_bug.cgi?id=48565
+  CFLAGS=${CFLAGS/-pipe/}
+  CXXFLAGS=${CXXFLAGS/-pipe/}
+
+  # Hmm, lots of Makefile.in and aclocal.m4 to worry about :-(
+  # if check_option "strip" "n"; then
+  # Makefile.in or aclocal.m4:
+  #  INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
+  #  INSTALL_STRIP_FLAG=-s
+  # configure:
+  #  INSTALL_STRIP_PROGRAM="\$(install_sh) -c -s"
+
+  echo "GCC := " $(eval "gcc --version | head -n 1 -")
+
+  ${srcdir}/gcc-${pkgver}/configure --build=${CHOST} \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--enable-bootstrap \
+		--enable-shared --enable-shared-libgcc --enable-static \
+		--enable-version-specific-runtime-libs \
+		--with-arch=$_arch \
+		--disable-multilib \
+		$_arch_conf \
+		--with-tune=generic \
+		--disable-__cxa_atexit \
+		--enable-languages=c,c++,fortran,lto \
+		--enable-graphite \
+		--enable-threads=posix \
+		--enable-libatomic \
+		--enable-libgomp \
+		--disable-libitm \
+		--enable-libquadmath \
+		--enable-libquadmath-support \
+		--enable-libssp \
+		--disable-win32-registry \
+		--disable-symvers \
+		--with-gnu-ld \
+		--with-gnu-as \
+		--disable-isl-version-check \
+		--enable-checking=release \
+		--without-libiconv-prefix \
+		--without-libintl-prefix \
+		--with-system-zlib
+
+  if check_option "strip" "n"; then
+    sed -i 's,^STRIP = .*$,STRIP = true,g'                   Makefile
+    sed -i 's,^STRIP_FOR_TARGET=.*$,STRIP_FOR_TARGET=true,g' Makefile
+  fi
+
+  make
+  
+  # make documentation
+  #cd $CHOST/libstdc++-v3
+  #make doc-man-doxygen
+}
+
+# setup() {
+  # cd ${srcdir}/gcc-build
+  # make -j1 DESTDIR=${destdir} install
+# }
+
+check() {
+  cd ${srcdir}/gcc-build
+
+  # do not abort on error as some are "expected"
+  make -k check || true
+  ${srcdir}/gcc-${pkgver}/contrib/test_summary
+}
+
+package_gcc-libs()
+{
+  pkgdesc="Runtime libraries shipped by GCC"
+  groups=('base')
+  depends=('msys2-runtime')
+  install=gcc-libs.install
+
+  cd ${srcdir}/gcc-build
+  make -j1 -C $CHOST/libgcc DESTDIR=${pkgdir} install-shared
+  for lib in libgomp libstdc++-v3/src; do
+    make -j1 -C $CHOST/$lib DESTDIR=${pkgdir} install-toolexeclibLTLIBRARIES
+  done
+  
+  make -j1 -C $CHOST/libstdc++-v3/po DESTDIR=${pkgdir} install
+  make -j1 -C $CHOST/libgomp DESTDIR=${pkgdir} install-info
+  make -j1 -C $CHOST/libquadmath DESTDIR=${pkgdir} install-info
+  
+  make -j1 DESTDIR=${pkgdir} install-target-libquadmath  
+  make -j1 DESTDIR=${pkgdir} install-target-libgfortran
+  make -j1 DESTDIR=${pkgdir} install-target-libssp
+  make -j1 DESTDIR=${pkgdir} install-target-libatomic
+
+  rm -f ${pkgdir}/*.dll
+  rm -rf ${pkgdir}/usr/lib/
+
+  # remove static libraries
+  #find ${pkgdir} -name *.a -delete
+  
+  # Install Runtime Library Exception
+  install -Dm644 ${srcdir}/gcc-${pkgver}/COPYING.RUNTIME \
+    ${pkgdir}/usr/share/licenses/gcc-libs/RUNTIME.LIBRARY.EXCEPTION
+}
+
+package_gcc()
+{
+  pkgdesc="The GNU Compiler Collection - C and C++ frontends"
+  depends=("gcc-libs=$pkgver-$pkgrel" 'binutils>=2.23' 'mpc' 'msys2-runtime-devel' 'msys2-w32api-headers' 'msys2-w32api-runtime')
+  options=('staticlibs')
+  install=gcc.install
+
+  cd ${srcdir}/gcc-build
+  
+  make -j1 DESTDIR=${pkgdir} install
+  if [ "$CARCH" = "x86_64" ]
+  then
+    mv $pkgdir/usr/lib/gcc/${CHOST}/lib/libgcc_s.dll.a $pkgdir/usr/lib/gcc/${CHOST}/${pkgver/-*/.*}/
+    rm -rf $pkgdir/usr/lib/gcc/${CHOST}/lib
+  fi
+  #install -d $pkgdir/usr/share/gdb/auto-load/usr/lib
+  #mv $pkgdir{,/usr/share/gdb/auto-load}/usr/lib/libstdc++.so.6.0.18-gdb.py
+
+  # unfortunately it is much, much easier to install the lot and clean-up the mess...
+  rm $pkgdir/usr/bin/{$CHOST-,}gfortran
+  # remove all DLLs
+  rm -f $pkgdir/usr/bin/*.dll
+  
+  rm -f $pkgdir/usr/lib/libiberty.a
+  #rm -f $pkgdir/usr/lib/gcc/${CHOST}/${pkgver}/libatomic{.dll,}.a
+  rm -f $pkgdir/usr/lib/gcc/${CHOST}/${pkgver}/libgfortran{.dll,}.a
+  rm -f $pkgdir/usr/lib/gcc/${CHOST}/${pkgver}/libgfortran.spec
+  rm -r $pkgdir/usr/lib/gcc/$CHOST/${pkgver}/finclude
+  rm -f $pkgdir/usr/lib/gcc/$CHOST/${pkgver}/f951.exe
+  rm -f $pkgdir/usr/lib/gcc/$CHOST/${pkgver}/{libcaf_single,libgfortranbegin}.a
+  rm -f $pkgdir/usr/share/info/{gfortran,libgomp,libquadmath}.info
+  rm -f $pkgdir/usr/share/locale/{de,fr}/LC_MESSAGES/libstdc++.mo
+  rm -f $pkgdir/usr/share/man/man1/gfortran.1
+  
+  # remove static libraries - note libstdc++.a is needed for the binutils and glibc testsuite
+  #rm $pkgdir/usr/lib/gcc/${CHOST}/${pkgver}/lib{gomp,quadmath}{.dll,}.a
+
+  # many packages expect this symlinks
+  ln -s gcc ${pkgdir}/usr/bin/cc
+  cp -f ${pkgdir}/usr/bin/cpp.exe ${pkgdir}/usr/lib/cpp
+
+  # POSIX conformance launcher scripts for c89 and c99
+  cat > $pkgdir/usr/bin/c89 <<"EOF"
+#!/bin/sh
+fl="-std=c89"
+for opt; do
+  case "$opt" in
+    -ansi|-std=c89|-std=iso9899:1990) fl="";;
+    -std=*) echo "`basename $0` called with non ANSI/ISO C option $opt" >&2
+	    exit 1;;
+  esac
+done
+exec gcc $fl ${1+"$@"}
+EOF
+
+  cat > $pkgdir/usr/bin/c99 <<"EOF"
+#!/bin/sh
+fl="-std=c99"
+for opt; do
+  case "$opt" in
+    -std=c99|-std=iso9899:1999) fl="";;
+    -std=*) echo "`basename $0` called with non ISO C99 option $opt" >&2
+	    exit 1;;
+  esac
+done
+exec gcc $fl ${1+"$@"}
+EOF
+
+  chmod 755 $pkgdir/usr/bin/c{8,9}9
+
+  # install the libstdc++ man pages
+  #install -dm755 ${pkgdir}/usr/share/man/man3
+ # install -m644 -t ${pkgdir}/usr/share/man/man3 \
+  #  ${CHOST}/libstdc++-v3/doc/doxygen/man/man3/*.3
+
+  # Install Runtime Library Exception
+  install -Dm644 ${srcdir}/gcc-${pkgver}/COPYING.RUNTIME \
+    ${pkgdir}/usr/share/licenses/gcc/RUNTIME.LIBRARY.EXCEPTION
+}
+
+package_gcc-fortran()
+{
+  pkgdesc="Fortran front-end for GCC"
+  depends=("gcc=$pkgver-$pkgrel")
+  options=('staticlibs' '!emptydirs')
+  install=gcc-fortran.install
+
+  cd ${srcdir}/gcc-build
+  make -j1 DESTDIR=$pkgdir install-target-libgfortran
+  make -j1 -C $CHOST/libgomp DESTDIR=$pkgdir install-nodist_fincludeHEADERS
+  make -j1 -C gcc DESTDIR=$pkgdir fortran.install-{common,man,info}
+  install -Dm755 gcc/f951 $pkgdir/usr/lib/gcc/$CHOST/$pkgver/f951
+
+  ln -s gfortran ${pkgdir}/usr/bin/f95
+
+  rm -f $pkgdir/usr/lib/gcc/${CHOST}/lib/libgcc_s.dll.a
+  # remove files included in gcc-libs or gcc and unnneeded static lib
+  rm ${pkgdir}/usr/bin/*.dll
+  rm ${pkgdir}/usr/lib/gcc/$CHOST/${pkgver}/libquadmath.{dll.a,a}
+  rm ${pkgdir}/usr/lib/gcc/$CHOST/${pkgver}/{*.o,libgc*}
+  rm ${pkgdir}/usr/share/info/libquadmath.info
+  rm -r ${pkgdir}/usr/lib/gcc/$CHOST/${pkgver}/include
+  #rm ${pkgdir}/usr/lib/gcc/$CHOST/${pkgver}/libgfortran.a
+
+  # Install Runtime Library Exception
+  install -Dm644 ${srcdir}/gcc-${pkgver}/COPYING.RUNTIME \
+    ${pkgdir}/usr/share/licenses/gcc-fortran/RUNTIME.LIBRARY.EXCEPTION
+}
