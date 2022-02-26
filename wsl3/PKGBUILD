@@ -1,0 +1,90 @@
+# Maintainer:  Tim Stahlhut <stahta01@gmail.com>
+
+_install_prefix="/usr"
+
+_realname=wsl3
+_sourcedir=${_realname}-git
+pkgbase=${_realname}
+pkgname=("${_realname}")
+pkgver=3.22.4
+pkgrel=1
+pkgdesc="Windows System Libraries (WSL) w32api and mingwrt (mingw.org)"
+arch=('any')
+mingw_arch=('mingw32')
+url='https://mingw.osdn.io/'
+license=('LICENSE')
+makedepends=('git' 'autotools' 'mingw-w64-cross-gcc')
+options=('!strip')
+_commit='5fe5d0aa874341cc015b0b71f5b5a6d9f3de8e7d'
+source=("${_sourcedir}"::"git://git.osdn.net/gitroot/mingw/mingw-org-wsl.git#commit=${_commit}")
+sha256sums=('SKIP')
+
+MINGW_CHOST=${CARCH}-w64-mingw32
+
+prepare() {
+  cd "${srcdir}/${_sourcedir}"
+
+  cd w32api && autoconf -I ..
+  cd ../mingwrt && autoconf -I ..
+}
+
+build() {
+  cd "${srcdir}/${_sourcedir}/w32api"
+  mkdir -p "${srcdir}/build-w32api-${CHOST}" && cd "${srcdir}/build-w32api-${CHOST}"
+
+  export PATH=${_install_prefix}/bin:$PATH
+  echo "PATH := $PATH"
+
+  export CXXFLAGS="-pipe"
+  export CFLAGS="-pipe"
+
+  # Remove "-D__USE_MINGW_ANSI_STDIO=1" from CPPFLAGS
+  CPPFLAGS=${CPPFLAGS/-D__USE_MINGW_ANSI_STDIO=1}
+  echo "CPPFLAGS := $CPPFLAGS"
+
+  msg "Configuring w32api"
+  CC="${MINGW_CHOST}-gcc -static-libgcc" \
+  ../${_sourcedir}/w32api/configure \
+     --build=${CHOST} \
+     --host=${MINGW_CHOST} \
+    --prefix=/usr
+
+  make _mingw.h
+
+  make
+
+  msg "Installing local copy of w32api"
+  cd "${srcdir}/build-w32api-${CHOST}"
+  rm -fr ${srcdir}/temp-install-w32api${_install_prefix}
+  mkdir -p ${srcdir}/temp-install-w32api${_install_prefix}
+  make DESTDIR=${srcdir}/temp-install-w32api install
+
+  msg "Copy extra headers to local copy of w32api"
+  cp --no-clobber ${srcdir}/build-w32api-${CHOST}/*.h ${srcdir}/temp-install-w32api${_install_prefix}/include/
+
+  cd "${srcdir}/${_sourcedir}/mingwrt"
+  mkdir -p "${srcdir}/build-mingwrt-${CHOST}" && cd "${srcdir}/build-mingwrt-${CHOST}"
+
+# gcc -dumpversion
+
+  msg "Configuring mingwrt"
+  CFLAGS+=" -I${srcdir}/temp-install-w32api${_install_prefix}/include -I/usr/lib/gcc/i686-pc-msys/4.8.2/include" \
+  CC="${MINGW_CHOST}-gcc -static-libgcc" \
+  ../${_sourcedir}/mingwrt/configure \
+     --build=${CHOST} \
+     --host=${MINGW_CHOST} \
+    --prefix="${_install_prefix}"
+
+  make
+}
+
+package() {
+  cd "${srcdir}/build-w32api-${CHOST}"
+  msg "Installing w32api"
+  make install DESTDIR="${pkgdir}"
+
+  cd "${srcdir}/build-mingwrt-${CHOST}"
+  msg "Installing mingwrt"
+  mkdir -p "${pkgdir}${_install_prefix}/bin"
+  make install DESTDIR="${pkgdir}"
+}
