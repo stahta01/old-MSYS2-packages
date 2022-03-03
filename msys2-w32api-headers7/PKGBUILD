@@ -1,0 +1,69 @@
+# Maintainer:  Tim Stahlhut <stahta01@gmail.com>
+# Contributor: Alexey Pavlov <alexpux@gmail.com>
+
+pkgname="msys2-w32api-headers"
+pkgbase="$pkgname"7
+# _git_branch="v7.x"
+_git_commit=8db8dd5aa1885e7807424a06bd14eebc9c0effd4
+pkgver=7.0.0.5479.8db8dd5aa
+pkgrel=1
+pkgdesc="Win32 API headers for MSYS2 32bit toolchain"
+arch=('i686' 'x86_64')
+url="https://mingw-w64.sourceforge.io/"
+license=('custom')
+groups=('msys2-devel')
+depends=()
+makedepends=('git' 'mingw-w64-cross-gcc')
+#provides=($pkgname)
+#conflicts=($pkgname)
+options=('staticlibs' '!buildflags')
+_sourcedir=mingw-w64-git
+_git_repo_url=git+https://git.code.sf.net/p/mingw-w64/mingw-w64
+if [ -n "$_git_branch" ]; then
+  source=(${_sourcedir}::"${_git_repo_url}#branch=$_git_branch")
+elif [ -n "$_git_tag" ]; then
+  source=(${_sourcedir}::"${_git_repo_url}#tag=$_git_tag")
+elif [ -n "$_git_commit" ]; then
+  source=(${_sourcedir}::"${_git_repo_url}#commit=$_git_commit")
+else
+  source=(${_sourcedir}::"${_git_repo_url}")
+fi
+source+=(001-add-corecrt-to-base-headers.patch)
+sha256sums=('SKIP'
+            '15e120559865471919db6e55b9206a71ccfa058f8f1d61d5f510d92ceb6ac346')
+
+MINGW_CHOST=${CARCH}-w64-mingw32
+
+prepare() {
+  cd "${srcdir}/${_sourcedir}/mingw-w64-headers"
+  patch -p2 -i ${srcdir}/001-add-corecrt-to-base-headers.patch
+  autoreconf -fiv
+}
+
+pkgver() {
+  cd "${srcdir}/${_sourcedir}"
+  local _major=$(head -n 16 mingw-w64-headers/crt/_mingw_mac.h | grep '__MINGW64_VERSION_MAJOR' | sed -e 's/.* //' | tr '\n' '.' | sed 's/.$/\n/')
+  local _minor=$(head -n 16 mingw-w64-headers/crt/_mingw_mac.h | grep '__MINGW64_VERSION_MINOR' | sed -e 's/.* //' | tr '\n' '.' | sed 's/.$/\n/')
+  local _rev=0
+  printf "%s.%s.%s.%s.%s" ${_major} ${_minor} ${_rev} "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd ${srcdir}/${_sourcedir}/mingw-w64-headers
+
+  ./configure \
+     --build=${CHOST} \
+     --host=${MINGW_CHOST} \
+     --prefix=/usr \
+     --enable-sdk=all \
+     --enable-w32api \
+     --with-default-win32-winnt=0x601
+
+  make
+}
+
+package() {
+  cd ${srcdir}/${_sourcedir}/mingw-w64-headers
+
+  make DESTDIR=${pkgdir} install
+}
